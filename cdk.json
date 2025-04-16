@@ -1,5 +1,12 @@
 自动生成
 
+{
+    "context": {
+      "vpc_id": "vpc-12345678",
+      "subnet_ids": ["subnet-12345678", "subnet-87654321"]
+    }
+  }
+
 "context": {
 “env”: "dev",
 “id”: "123",
