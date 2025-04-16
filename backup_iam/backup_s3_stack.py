@@ -11,8 +11,9 @@ class WebIdentityFederatedIamRoleStack(Stack):
 
         # 创建 IAM 角色，允许通过 Web 身份验证假设角色
         federated_role = iam.Role(self, "FederatedWebIdentityRole",
+            role_name="xx",
             assumed_by=iam.FederatedPrincipal(
-                federated_provider="arn:aws:iam::aws:policy/AmazonCognitoPowerUser",  # 外部身份提供者的 ARN
+                federated="arn:aws:iam::aws:policy/AmazonCognitoPowerUser",  # 外部身份提供者的 ARN
                 # 使用 Web 身份验证机制
                 assume_role_action="sts:AssumeRoleWithWebIdentity",
                 conditions={
@@ -37,7 +38,7 @@ class WebIdentityFederatedIamRoleStack(Stack):
         ))
 
         # 输出角色 ARN
-        core.CfnOutput(self, "FederatedWebIdentityRoleArn",
+        CfnOutput(self, "FederatedWebIdentityRoleArn",
             value=federated_role.role_arn,
             description="The ARN of the federated role assumed by Web Identity"
         )
@@ -46,6 +47,36 @@ app = App()
 WebIdentityFederatedIamRoleStack(app, "WebIdentityFederatedIamRoleStack")
 app.synth()
 
+
+
+
+
+from aws_cdk import (
+    App, Stack, Fn,
+    aws_iam as iam,
+    aws_cdk_lib as cdk
+)
+from constructs import Construct
+
+class IAMRoleStack(Stack):
+    def __init__(self, scope: Construct, id: str, **kwargs) -> None:
+        super().__init__(scope, id, **kwargs)
+
+        # 导入从 Stack 1 输出的角色 ARN
+        role_arn = Fn.import_value("FederatedWebIdentityRoleArn")
+
+        # 导入 IAM 角色
+        federated_role = iam.Role.from_role_arn(self, "ImportedFederatedRole", role_arn)
+
+        # 导入从 Stack 1 输出的 S3 存储桶 ARN
+        bucket_arn = Fn.import_value("S3BucketArn")
+
+        # 为角色添加 S3 存储桶访问权限
+        federated_role.add_to_policy(iam.PolicyStatement(
+            actions=["s3:GetObject", "s3:PutObject"],  # 允许访问 S3 存储桶的对象
+            resources=[f"{bucket_arn}/*"],  # 使用存储桶的 ARN 作为资源
+            effect=iam.Effect.ALLOW
+        ))
 
 
 
